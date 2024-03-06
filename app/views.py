@@ -9,9 +9,29 @@ from .serializers import (
 
 class RecipeListView(APIView):
     def get(self, request):
-        recipe = Recipe.objects.all()
-        serializers = RecipeListSerializers(recipe, many=True)
-        return Response(serializers.data)
+        limit = int(request.query_params.get('limit', 10))
+        offset = int(request.query_params.get('offset', 0))
+        dish_type = request.query_params.get('dish_type', None)
+        category = request.query_params.get('category', None)
+        cooking_time = int(request.query_params.get('cooking_time', 0))
+
+        recipes = Recipe.objects.all()
+
+        if dish_type:
+            recipes = recipes.filter(dish_type=dish_type)
+        if category:
+            recipes = recipes.filter(category=category)
+        if cooking_time:
+            recipes = recipes.filter(cooking_time=cooking_time)
+
+        total_count = recipes.count()
+        recipes = recipes[offset:offset+limit]
+
+        serializer = RecipeListSerializers(recipes, many=True)
+        return Response({
+            'total_count': total_count,
+            'recipes': serializer.data
+        })
 
 
 class RecipeDetailView(APIView):
